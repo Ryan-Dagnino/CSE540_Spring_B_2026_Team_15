@@ -1,7 +1,7 @@
 # CSE540_Spring_B_2026_Team_15
 This repository is for the CSE540 Blockchain class at ASU during the Spring 2026 semester for team 15.
 
-Our team has chosen the identity management option and we have chosen to do a calssified access control project. This entails having a smart contract for uploading new individuals onto the registry, updated their classified status (i.e. secret, top secret, etc), and suspending/removing individuals.
+Our team has chosen the identity management option and we have chosen to do a classified access control project. This entails having a smart contract for uploading new individuals onto the registry, updated their classified status (i.e. secret, top secret, etc), and suspending/removing individuals.
 
 This project will be using Ethereum's blockchain using GoQuorum for private blockchain functionality.
 
