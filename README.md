@@ -8,7 +8,9 @@ This project will be using Ethereum's blockchain using GoQuorum for private bloc
 -------- Setup Instructions --------
 
 git clone https://github.com/Ryan-Dagnino/CSE540_Spring_B_2026_Team_15.git
+
 cd CSE540_Spring_B_2026_Team_15
+
 npm install
 
 -------- Deployment --------
@@ -17,8 +19,10 @@ To use this system, you can send a transaction to the smart contract on the ethe
 
 -------- Example --------
 
-Connect to GoQuorum node
+Connect to GoQuorum node 
+
 contract = new ethers.Contract(contractAddr, ABI, signer)
+
 contract.AddToRegistry(user, classificationLevel)
 
 -------- File Heirarchy --------
