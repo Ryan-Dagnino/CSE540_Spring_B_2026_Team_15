@@ -13,9 +13,9 @@ addUser(user, classificationLevel) This will be used by permissioned users (DCSA
 
 updateClearance(user, newClearance) Used by DCSA to change clearance level
 
-verifyAccess(user, project) Checks if a user meets requirements for a project
+verifyAccess(user, clearance) Checks if a user meets requirements
 
-deactivateUser(user, project) Deactivates a user's account
+deactivateUser(user) Deactivates a user's account
 
 -------- Setup Instructions --------
 
