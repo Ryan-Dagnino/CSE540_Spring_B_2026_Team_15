@@ -6,21 +6,16 @@ Our team has chosen the identity management option and we have chosen to do a cl
 This project will be using Ethereum's blockchain using GoQuorum for private blockchain functionality.
 
 -------- Contract Design --------
+
 We will have one smart contract that will include multiple functions that contract will be responsible for. The functions we have decided on include:
 
-addToRegistry(user, classificationLevel) This will be used by permissioned users (DCSA) 
+addUser(user, classificationLevel) This will be used by permissioned users (DCSA) 
 
 updateClearance(user, newClearance) Used by DCSA to change clearance level
 
-registerProject(project, minimumClearance) Creates a project with a minimum clearance
+verifyAccess(user, project) Checks if a user meets requirements for a project
 
-checkAccess(user, project) Checks if a user meets requirements for a project
-
-grantAccess(user, project) Grants a user access to a project
-
-revokeAccess(user, project) Revokes a user's access to a project
-
-revokeClearance(user) Revokes a user's clearance
+deactivateUser(user, project) Deactivates a user's account
 
 -------- Setup Instructions --------
 
