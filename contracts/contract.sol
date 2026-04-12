@@ -1,95 +1,101 @@
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
 
 /*
-    Classified Access Control Smart Contract (Draft)
+    Decentralized Identity and Access Management
 
-    This contract will manage:
-    - User registration
-    - Clearance assignment
-    - Access verification
+    - Users self-register DIDs
+    - Issuers issue verifiable credentials
+    - Verifiers check credential status
+    - Only hashes are stored on-chain (no PII)
 */
 
-contract ClassifiedAccessControl {
-
-    enum ClearanceLevel { NONE, CONFIDENTIAL, SECRET, TOP_SECRET }
-
-    struct User {
-        address userAddress;
-        ClearanceLevel clearance;
-        bool isActive;
+contract DecentralizedIAMContract {
+    // Decentralized Identifier (DID)
+    struct DID {
+        address owner;
+        bytes32 didDocumentHash; // hash of off-chain DID document
         bool exists;
     }
 
-    // Create the priveledged user, admin, for creating clearances
-    address public admin;
-
-    // Modifier to check if user calling function is actually admin
-    modifier onlyAdmin()
-    {
-        require(msg.sender == admin, "User is not admin");
-        _; 
+    // Verifiable Credential for status only data off-chain)
+    struct Credential {
+        bytes32 credentialHash; // hash of off-chain credential
+        address issuer;
+        bool revoked;
     }
 
-    // Constructor to set admin of clearance registry
-    // This happens at deployment
-    constructor()
-    {
-        admin = msg.sender;
+    // Storage
+    // DID identifier (hash) → DID
+    mapping(bytes32 => DID) public didRegistry;
+
+    // Credential ID → Credential record
+    mapping(bytes32 => Credential) public credentials;
+
+    // Events
+    event DIDRegistered(bytes32 indexed did, address indexed owner);
+    event CredentialIssued(
+        bytes32 indexed credentialId,
+        bytes32 indexed did,
+        address indexed issuer
+    );
+    event CredentialRevoked(bytes32 indexed credentialId);
+    event CredentialVerified(bytes32 indexed credentialId, bool valid);
+
+    // Modifiers
+    modifier onlyOwner(bytes32 did) {
+        require(didRegistry[did].exists, "DID not registered");
+        require(didRegistry[did].owner == msg.sender, "Not DID owner");
+        _;
     }
 
-    mapping(address => User) public registry;
+    // Register a new DID
+    function registerDID(bytes32 did, bytes32 didDocumentHash) external {
+        require(!didRegistry[did].exists, "DID already exists");
 
-    // events
-    event userAdded(address indexed user, ClearanceLevel level);
-    event clearanceUpdated(address indexed user, ClearanceLevel prevLevel, ClearanceLevel newLevel);
-    event userDeactivated(address indexed user);
-    event userReactivated(address indexed user);
+        didRegistry[did] = DID({
+            owner: msg.sender,
+            didDocumentHash: didDocumentHash,
+            exists: true
+        });
 
-    // contract functionality
-    function addUser(address _user, ClearanceLevel _level) public onlyAdmin {
-        // Make sure parameters are valid
-        require(_user != address(0), "Invalid user address.");
-        require(registry[_user].exists != true, "User can not be adder, already registered.");
-
-        // Create new user
-        registry[_user] = User({userAddress: _user, clearance: _level, isActive: true, exists: true});
-
-        // Emit event
-        emit userAdded(_user, _level);
+        emit DIDRegistered(did, msg.sender);
     }
 
-    function updateClearance(address _user, ClearanceLevel _level) public onlyAdmin {
-        // Make sure parameters are valid
-        require(_user != address(0), "Invalid user address.");
-        require(registry[_user].exists != false, "User does not exist.");
-        require(registry[_user].isActive != false, "User is not active.");
+    // Issue a new credential for a DID
+    function issueCredential(
+        bytes32 credentialId,
+        bytes32 did,
+        bytes32 credentialHash
+    ) external {
+        require(didRegistry[did].exists, "Unknown DID");
+        require(credentials[credentialId].issuer == address(0), "Already issued");
 
-        // Change clearance
-        ClearanceLevel prevLevel = registry[_user].clearance;
-        registry[_user].clearance = _level;
+        credentials[credentialId] = Credential({
+            credentialHash: credentialHash,
+            issuer: msg.sender,
+            revoked: false
+        });
 
-        // Emit
-        emit clearanceUpdated(_user, prevLevel, _level);
+        emit CredentialIssued(credentialId, did, msg.sender);
     }
 
-    function deactivateUser(address _user) public onlyAdmin {
-        // Make sure parameters are valid
-        require(_user != address(0), "Invalid user address.");
-        require(registry[_user].exists != false, "User does not exist.");
-        require(registry[_user].isActive != false, "User is already not active.");
+    // Revoke an issued credential
+    function revokeCredential(bytes32 credentialId) external {
+        Credential storage cred = credentials[credentialId];
+        require(cred.issuer == msg.sender, "Only issuer can revoke");
+        require(!cred.revoked, "Already revoked");
 
-        registry[_user].isActive = false;
-
-        emit userDeactivated(_user);
+        cred.revoked = true;
+        emit CredentialRevoked(credentialId);
     }
 
-    function verifyAccess(address _user, ClearanceLevel _requiredLevel) public view returns (bool) {
-        User memory user = registry[_user];
-        bool hasAccess = false;
-        if (user.exists && user.isActive && user.clearance >= _requiredLevel)
-        {
-            hasAccess = true;
-        }
-        return hasAccess;
+    // Verify credential validity
+    function verifyCredential(bytes32 credentialId) external returns (bool valid) {
+        Credential memory cred = credentials[credentialId];
+
+        valid = (cred.issuer != address(0) && !cred.revoked);
+        emit CredentialVerified(credentialId, valid);
+        return valid;
     }
 }
