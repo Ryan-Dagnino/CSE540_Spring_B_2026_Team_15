@@ -1,24 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-/*
-    Decentralized Identity and Access Management
-
-    - Users self-register DIDs
-    - Issuers (DCSA) issue verifiable credentials
-    - Verifiers (DCSA) check credential status
-    - Only hashes are stored on-chain (no PII)
-*/
-
-contract DecentralizedIAMContract {
-    // Decentralized Identifier (DID)
+contract IAMContract {
+    // Decentralized identifier (DID)
+    // This struct has the owner, the hash off the DID, and whether this user exists
     struct DID {
         address owner;
-        bytes32 didDocumentHash; // hash of off-chain DID document
+        bytes32 didDocumentHash; 
         bool exists;
     }
 
-    // Verifiable Credential for status only data off-chain)
+    // Credential
+    // This struct has the issuer, the hash off the credential, and whether this credential is revoked
     struct Credential {
         bytes32 credentialHash; // hash of off-chain credential
         address issuer;
@@ -26,24 +19,18 @@ contract DecentralizedIAMContract {
     }
 
     // Storage
-
     address public dcsa;
-    // DID identifier (hash) → DID
+
+    // DID registry mapping, maps did hash to did
     mapping(bytes32 => DID) public didRegistry;
 
-    // Credential ID → Credential record
+    // credential mapping, maps credential hash to credential
     mapping(bytes32 => Credential) public credentials;
 
     // Events
     event DIDRegistered(bytes32 indexed did, address indexed owner);
-    event ClearanceIssued(
-        bytes32 indexed credentialId,
-        bytes32 indexed did,
-        address indexed issuer
-    );
-
+    event ClearanceIssued(bytes32 indexed credentialId, bytes32 indexed did, address indexed issuer);
     event ClearanceRevoked(bytes32 indexed credentialId);
-
     event ClearanceVerified(bytes32 indexed credentialId, bool valid);
 
     // Modifiers
@@ -59,6 +46,7 @@ contract DecentralizedIAMContract {
     }
 
     // Constructor to set DCSA address
+    // TODO: This needs to be worked through as currently there is no way to change the address in cases of security breach
     constructor(address _dcsa) {
         require(_dcsa != address(0), "Invalid DCSA address");
         dcsa = _dcsa;
@@ -69,29 +57,19 @@ contract DecentralizedIAMContract {
     function registerDID(bytes32 did, bytes32 didDocumentHash) external {
         require(!didRegistry[did].exists, "DID already exists");
 
-        didRegistry[did] = DID({
-            owner: msg.sender,
-            didDocumentHash: didDocumentHash,
-            exists: true
-        });
+        DID memory newDid = DID({owner: msg.sender, didDocumentHash: didDocumentHash, exists: true});
+        didRegistry[did] = newDid;
 
         emit DIDRegistered(did, msg.sender);
     }
 
     // Issue a new credential for a DID
-    function issueClearance(
-        bytes32 credentialId,
-        bytes32 did,
-        bytes32 credentialHash
-    ) external onlyDCSA {
+    function issueClearance(bytes32 credentialId, bytes32 did, bytes32 credentialHash) external onlyDCSA {
         require(didRegistry[did].exists, "Unknown DID");
         require(credentials[credentialId].issuer == address(0), "Credential already exists");
 
-        credentials[credentialId] = Credential({
-            credentialHash: credentialHash,
-            issuer: msg.sender,
-            revoked: false
-        });
+        Credential memory newCredential = Credential({credentialHash: credentialHash, issuer: msg.sender, revoked: false});
+        credentials[credentialId] = newCredential;
 
         emit ClearanceIssued(credentialId, did, msg.sender);
     }
@@ -119,5 +97,7 @@ contract DecentralizedIAMContract {
 
         return valid;
     }
+
+    // TODO: Create credential to DID lookup
 
 }
