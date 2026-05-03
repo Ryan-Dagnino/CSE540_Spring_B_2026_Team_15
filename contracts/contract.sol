@@ -57,7 +57,6 @@ contract IAMContract {
     }
 
     // Constructor to set DCSA address
-    // TODO: This needs to be worked through as currently there is no way to change the address in cases of security breach
     constructor(address _dcsa) {
         require(_dcsa != address(0), "Invalid DCSA address");
         dcsa = _dcsa;
