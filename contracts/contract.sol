@@ -23,6 +23,7 @@ contract IAMContract {
         bytes32 credentialHash; // hash of off-chain credential
         address issuer; // Who issues the credential
         bool revoked; // Has it been revoked
+        bytes32 did;
         clearanceLevel level; // What level of clearance is this credential
         uint256 expires; // When does this credential expire
     }
@@ -79,7 +80,7 @@ contract IAMContract {
         require(didRegistry[did].exists, "Unknown DID");
         require(credentials[credentialId].issuer == address(0), "Credential already exists");
 
-        Credential memory newCredential = Credential({credentialHash: credentialHash, issuer: msg.sender, revoked: false, level: _level, expires: block.timestamp + clearanceDuration});
+        Credential memory newCredential = Credential({credentialHash: credentialHash, issuer: msg.sender, revoked: false, did: did, level: _level, expires: block.timestamp + clearanceDuration});
         credentials[credentialId] = newCredential;
 
         emit ClearanceIssued(credentialId, did, msg.sender, _level);
