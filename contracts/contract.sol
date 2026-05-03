@@ -29,6 +29,8 @@ contract IAMContract {
 
     // Storage
     address public dcsa;
+    address public proposedDcsa;
+    address public owner;
 
     // DID registry mapping, maps did hash to did
     mapping(bytes32 => DID) public didRegistry;
@@ -41,11 +43,11 @@ contract IAMContract {
     event ClearanceIssued(bytes32 indexed credentialId, bytes32 indexed did, address indexed issuer, clearanceLevel level);
     event ClearanceRevoked(bytes32 indexed credentialId);
     event ClearanceVerified(bytes32 indexed credentialId, bool valid);
+    event DCSAProposed(address indexed proposedDCSA);
 
     // Modifiers
-    modifier onlyOwner(bytes32 did) {
-        require(didRegistry[did].exists, "DID not registered");
-        require(didRegistry[did].owner == msg.sender, "Not DID owner");
+    modifier onlyOwner() {
+        require(owner == msg.sender, "Not owner");
         _;
     }
 
@@ -59,6 +61,7 @@ contract IAMContract {
     constructor(address _dcsa) {
         require(_dcsa != address(0), "Invalid DCSA address");
         dcsa = _dcsa;
+        owner = msg.sender;
     }
 
 
@@ -105,6 +108,22 @@ contract IAMContract {
         emit ClearanceVerified(credentialId, valid);
 
         return valid;
+    }
+
+    // These two functions propose a new DCSA and the proposed DCSA must accept. This removes
+    // issues where the DCSA may be compromised, so the owner of the blockchain can elect a new DCSA
+    // and that new DCSA must accept
+    function proposeNewDcsa(address newDcsa) external onlyOwner
+    {
+        require(newDcsa != address(0), "Invalid Address");
+        proposedDcsa = newDcsa;
+        emit DCSAProposed(newDcsa);
+    }
+
+    function acceptDCSA() external
+    {
+        require(msg.sender == proposedDcsa, "Not the proposed DCSA");
+        dcsa = proposedDcsa;
     }
 
 }
