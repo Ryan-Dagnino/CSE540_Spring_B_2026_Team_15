@@ -10,12 +10,21 @@ contract IAMContract {
         bool exists;
     }
 
+    enum clearanceLevel
+    {
+        none,
+        secret,
+        top_secret
+    }
+
     // Credential
     // This struct has the issuer, the hash off the credential, and whether this credential is revoked
     struct Credential {
         bytes32 credentialHash; // hash of off-chain credential
-        address issuer;
-        bool revoked;
+        address issuer; // Who issues the credential
+        bool revoked; // Has it been revoked
+        clearanceLevel level; // What level of clearance is this credential
+        uint256 expires; // When does this credential expire
     }
 
     // Storage
@@ -29,7 +38,7 @@ contract IAMContract {
 
     // Events
     event DIDRegistered(bytes32 indexed did, address indexed owner);
-    event ClearanceIssued(bytes32 indexed credentialId, bytes32 indexed did, address indexed issuer);
+    event ClearanceIssued(bytes32 indexed credentialId, bytes32 indexed did, address indexed issuer, clearanceLevel level);
     event ClearanceRevoked(bytes32 indexed credentialId);
     event ClearanceVerified(bytes32 indexed credentialId, bool valid);
 
@@ -64,14 +73,14 @@ contract IAMContract {
     }
 
     // Issue a new credential for a DID
-    function issueClearance(bytes32 credentialId, bytes32 did, bytes32 credentialHash) external onlyDCSA {
+    function issueClearance(bytes32 credentialId, bytes32 did, bytes32 credentialHash, clearanceLevel _level, uint256 clearanceDuration) external onlyDCSA {
         require(didRegistry[did].exists, "Unknown DID");
         require(credentials[credentialId].issuer == address(0), "Credential already exists");
 
-        Credential memory newCredential = Credential({credentialHash: credentialHash, issuer: msg.sender, revoked: false});
+        Credential memory newCredential = Credential({credentialHash: credentialHash, issuer: msg.sender, revoked: false, level: _level, expires: block.timestamp + clearanceDuration});
         credentials[credentialId] = newCredential;
 
-        emit ClearanceIssued(credentialId, did, msg.sender);
+        emit ClearanceIssued(credentialId, did, msg.sender, _level);
     }
 
 
@@ -85,19 +94,17 @@ contract IAMContract {
 
         cred.revoked = true;
         emit ClearanceRevoked(credentialId);
-    }
+    }  
 
 
     // Verify credential validity
-    function verifyClearance(bytes32 credentialId) external returns (bool valid) {
+    function verifyClearance(bytes32 credentialId, clearanceLevel required) external returns (bool valid) {
         Credential memory cred = credentials[credentialId];
 
-        valid = (cred.issuer == dcsa && !cred.revoked);
+        valid = (cred.issuer == dcsa && !cred.revoked && cred.level >= required && cred.expires > block.timestamp);
         emit ClearanceVerified(credentialId, valid);
 
         return valid;
     }
-
-    // TODO: Create credential to DID lookup
 
 }
