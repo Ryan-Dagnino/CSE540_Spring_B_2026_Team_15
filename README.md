@@ -1,42 +1,66 @@
-# CSE540_Spring_B_2026_Team_15
-This repository is for the CSE540 Blockchain class at ASU during the Spring 2026 semester for team 15.
+# Identity & Access Management (IAM) for Classified Systems
+### CSE540 Blockchain | Team 15 | Arizona State University (Spring 2026)
 
-Our team has chosen the identity management option and we have chosen to do a classified access control project. This entails having a smart contract for uploading new individuals onto the registry, updated their classified status (i.e. secret, top secret, etc), and suspending/removing individuals.
+This repository implements a **Decentralized Identity (DID)** and **Classified Access Control** system. It provides a secure, immutable registry for managing personnel clearances (Secret, Top Secret, etc.) using blockchain technology to ensure sensitive authorization data is verifiable and tamper-proof.
 
-This project will be using Ethereum's blockchain using GoQuorum for private blockchain functionality.
+The project utilizes Ethereum's blockchain (GoQuorum) for private, permissioned functionality.
 
--------- Contract Design --------
+---
 
-We will have one smart contract that will include multiple functions that contract will be responsible for. The functions we have decided on include:
+## The Role of the DCSA
 
-addUser(user, classificationLevel) This will be used by permissioned users (DCSA) 
+The **Defense Counterintelligence and Security Agency (DCSA)** acts as the central administrative authority within the smart contract. 
 
-updateClearance(user, newClearance) Used by DCSA to change clearance level
+### Administrative Powers
+* **Issuance:** Only the DCSA can call `issueClearance` to grant a clearance level to a user.
+* **Revocation:** The DCSA has the exclusive right to call `revokeClearance` to immediately invalidate a credential.
+* **Verification:** The `verifyClearance` function ensures that a credential was signed by the current, active DCSA address.
 
-verifyAccess(user, clearance) Checks if a user meets requirements
+### DCSA Succession (Governance)
+To protect against compromised accounts, the contract owner can propose a change in authority:
+1. **Proposal:** `proposeNewDcsa(address newDcsa)` is called by the owner.
+2. **Acceptance:** The new address must call `acceptDCSA()` to officially take over the role.
 
-deactivateUser(user) Deactivates a user's account
+---
 
--------- Setup Instructions --------
+## Deployment Instructions (Remix IDE)
 
-git clone https://github.com/Ryan-Dagnino/CSE540_Spring_B_2026_Team_15.git
+Currently, the contract is deployed and tested using the **Remix Online IDE**. 
 
-cd CSE540_Spring_B_2026_Team_15
+### 1. Setup & Compilation
+1. Open [Remix IDE](https://remix.ethereum.org/).
+2. Create `IAMContract.sol` in the `contracts` folder and paste the source code.
+3. In the **Solidity Compiler** tab, select version `0.8.19` and click **Compile**.
 
-npm install
+### 2. Deployment (Critical Step)
+In the **Deploy & Run Transactions** tab:
+1. **Environment:** Select "Remix VM (Cancun)" for local testing.
+2. **DCSA Address Initialization:** * Before clicking deploy, look at the **Deploy** button area. 
+   * There is an input field for the `_dcsa` address. 
+   * Copy an address from the **Account** dropdown at the top of the tab and paste it into this field.
+   * **Note:** This address will be the only one authorized to issue clearances once the contract is live.
+3. Click **Deploy**.
 
--------- Deployment --------
+---
 
-To use this system, you can send a transaction to the smart contract on the ethereum blockchain using the Application Binary Interface (ABI) JSON to communicate with the ethers.js frontend (This has yet to be implemented). The backend is solidity code and will be uploaded to GoQuorum instead of the public Ethereum blockchain.
+## Contract Parameters & Enums
 
--------- Example --------
+### Clearance Levels (`enum`)
+When interacting with `issueClearance` or `verifyClearance`, use these integer values:
+* `0`: None
+* `1`: Secret
+* `2`: Top Secret
 
-Connect to GoQuorum node 
+### Required Inputs
+* **DID / Credential ID:** Use a unique `bytes32` hex string (e.g., `0x123...`).
+* **Duration:** Expiry time for clearances is calculated in seconds added to the current time.
 
-contract = new ethers.Contract(contractAddr, ABI, signer)
+---
 
-contract.AddToRegistry(user, classificationLevel)
-
--------- File Heirarchy --------
-
-Within the top level of the repository, we will have a folder for contracts (which will only include a single contract), a frontend folder for the ABI JSON and other components related to that, and possibly a test folder for testing purposes.
+## File Hierarchy
+```text
+.
+├── contracts/
+│   └── contract.sol      # Main IAM Smart Contract logic
+├── README.md             # Project documentation
+└── (Future Work)         # Frontend (ABI JSON) and Test folders
